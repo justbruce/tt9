@@ -97,6 +97,7 @@ public class TraditionalT9 extends KeyPadHandler {
 		determineAllowedInputModes();
 		mInputMode = InputModeValidator.validateMode(settings, mInputMode, allowedInputModes);
 
+		mInputMode.reset();
 		mInputMode.setTextFieldCase(InputFieldHelper.determineTextCase(currentInputConnection, inputField));
 		// Some modes may want to change the default text case based on grammar rules.
 		determineNextTextCase();
@@ -123,9 +124,14 @@ public class TraditionalT9 extends KeyPadHandler {
 	}
 
 
-	protected void onFinish() {
-		clearSuggestions();
+	protected void onFinishTyping() {
+		mInputMode = InputMode.getInstance(settings, InputMode.MODE_123);
+		hideStatusIcon();
+	}
 
+
+	protected void onStop() {
+		clearSuggestions();
 		hideStatusIcon();
 		hideWindow();
 

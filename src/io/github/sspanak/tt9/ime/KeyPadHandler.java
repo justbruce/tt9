@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
+import io.github.sspanak.tt9.Logger;
 import io.github.sspanak.tt9.ime.helpers.Key;
 import io.github.sspanak.tt9.preferences.SettingsStore;
 
@@ -82,21 +83,46 @@ abstract class KeyPadHandler extends InputMethodService {
 	 */
 	@Override
 	public void onStartInput(EditorInfo inputField, boolean restarting) {
+		Logger.d("keypad", "onStartInput <================");
 		currentInputConnection = getCurrentInputConnection();
 		// Logger.d("T9.onStartInput", "inputType: " + inputField.inputType + " fieldId: " + inputField.fieldId + " fieldName: " + inputField.fieldName + " packageName: " + inputField.packageName);
 
-		mEditing = NON_EDIT;
+		mEditing = EDITING_DIALER;
 
 		// https://developer.android.com/reference/android/text/InputType#TYPE_NULL
 		// Special or limited input type. This means the input connection is not rich,
 		// or it can not process or show things like candidate text, nor retrieve the current text.
 		// We just let Android handle this input.
 		if (currentInputConnection == null || inputField == null || inputField.inputType == InputType.TYPE_NULL) {
-			onFinish();
-			return;
+			onStop();
+			mEditing = NON_EDIT;
 		}
+	}
 
-		onStart(inputField);
+
+	/**
+	 * This will always be called after onStartInput(EditorInfo, boolean), when the
+	 * input view is being shown and input has started on a new input field. In here,
+	 * we handle restart, when a new input field is clicked in the same application.
+	 */
+	@Override
+	public void onStartInputView(EditorInfo inputField, boolean restarting) {
+		Logger.d("keypad", "onStartInputView <================");
+		if (!isOff()) {
+			onStart(inputField);
+		}
+	}
+
+
+	/**
+	 * Called to inform the input method that text input has finished in the last
+	 * editor. The user has not closed the application, so we go in stealth mode
+	 * until a new input field is clicked.
+	 */
+	@Override
+	public void onFinishInputView(boolean finishingInput) {
+		super.onFinishInputView(finishingInput);
+		onFinishTyping();
 	}
 
 
@@ -109,7 +135,7 @@ abstract class KeyPadHandler extends InputMethodService {
 		super.onFinishInput();
 		// Logger.d("onFinishInput", "When is this called?");
 		if (mEditing == EDITING || mEditing == EDITING_NOSHOW) {
-			onFinish();
+			onStop();
 		}
 	}
 
@@ -333,6 +359,7 @@ abstract class KeyPadHandler extends InputMethodService {
 	// helpers
 	abstract protected void onInit();
 	abstract protected void onStart(EditorInfo inputField);
-	abstract protected void onFinish();
+	abstract protected void onFinishTyping();
+	abstract protected void onStop();
 	abstract protected View createSoftKeyView();
 }
